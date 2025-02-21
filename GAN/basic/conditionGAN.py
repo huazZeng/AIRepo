@@ -12,7 +12,7 @@ hidden_dim = 256
 z_dim = 100
 num_classes = 10
 batch_size = 128
-epochs = 20
+epochs = 100
 lr = 0.0002
 patience = 10  # 早停的耐心次数
 best_loss = float('inf')
@@ -50,9 +50,9 @@ class Generator(nn.Module):
         return self.model(z)
 
 # 判别器模型
-class Discriminator(nn.Module):
+class labelinDiscriminator(nn.Module):
     def __init__(self):
-        super(Discriminator, self).__init__()
+        super(labelinDiscriminator, self).__init__()
         self.label_emb = nn.Embedding(num_classes, num_classes)
         self.model = nn.Sequential(
             nn.Linear(image_size + num_classes, hidden_dim),
@@ -68,15 +68,27 @@ class Discriminator(nn.Module):
         x = torch.cat([x, self.label_emb(labels)], dim=1)
         return self.model(x)
 
-
+class labeloutDiscriminator(nn.Module):
+    def __init__(self,numberofclasses):
+        super(labeloutDiscriminator, self).__init__()
+        self.model = nn.Sequential(
+            nn.Linear(image_size, hidden_dim),
+            nn.LeakyReLU(0.2),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.LeakyReLU(0.2),
+            nn.Linear(hidden_dim,numberofclasses ),
+            )
+    
+    def forward(self, x):
+        return nn.Softmax(self.model(x))
     
 
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+    print(device)   
     # 初始化生成器和判别器，并移动到GPU
     generator = Generator().to(device)
-    discriminator = Discriminator().to(device)
+    discriminator = labelinDiscriminator().to(device)
     # 检查和设置设备
     # 损失函数和优化器
     criterion = nn.BCELoss()
@@ -129,7 +141,7 @@ if __name__ == '__main__':
             with torch.no_grad():
                 num_images_per_class = 1
                 test_labels = torch.arange(0, num_classes).repeat_interleave(num_images_per_class).to(device)
-                
+                print(test_labels)
                 # 为每个标签生成一个对应的噪声向量
                 test_z = torch.randn(num_classes * num_images_per_class, z_dim).to(device)
                 
@@ -152,13 +164,13 @@ if __name__ == '__main__':
                 plt.title("Randomly Generated Images of Digits 0-9")
                 plt.axis('off')  # 关闭坐标轴显示
                 # 保存图像到指定路径
-                plt.savefig(f"AIRepo\GAN\\basic\data\{epoch}_generated_digits.png")
+                plt.savefig(f".\GAN\\basic\data\{epoch}_generated_digits.png")
                 
 
         
         
-    torch.save(generator.state_dict(), 'AIRepo\GAN\\basic\data\\c_best_generator.pth')
-    torch.save(discriminator.state_dict(), 'AIRepo\GAN\\basic\data\\c_best_discriminator.pth')
+    torch.save(generator.state_dict(), '.\GAN\\basic\data\\c_best_generator.pth')
+    torch.save(discriminator.state_dict(), '.\GAN\\basic\data\\c_best_discriminator.pth')
         
         
 
@@ -166,7 +178,7 @@ if __name__ == '__main__':
     with torch.no_grad():
             num_images_per_class = 1
             test_labels = torch.arange(0, num_classes).repeat_interleave(num_images_per_class).to(device)
-                
+            print(test_labels)    
                 # 为每个标签生成一个对应的噪声向量
             test_z = torch.randn(num_classes * num_images_per_class, z_dim).to(device)
                 
@@ -189,4 +201,4 @@ if __name__ == '__main__':
             plt.title("Randomly Generated Images of Digits 0-9")
             plt.axis('off')  # 关闭坐标轴显示
                 # 保存图像到指定路径
-            plt.savefig(f"AIRepo\GAN\\basic\data\\final_generated_digits.png")
+            plt.savefig(f".\GAN\\basic\data\\final_generated_digits.png")
